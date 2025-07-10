@@ -8,6 +8,7 @@
 
 static int wifiConnected = 0;
 static int wifiClientConnected = 0;
+static void cpxPacketCallback(const CPXPacket_t *cpxRx);
 
 static CPXPacket_t rxp;
 static CPXPacket_t txp;
@@ -49,8 +50,8 @@ void rx_task(void *parameters)
     }
   }
 }
-/**
- * void comm_task(void *parameters)
+
+void comm_task(void *parameters)
 {
   // Initialize the route for our communication packets
   cpxInitRoute(CPX_T_GAP8, CPX_T_WIFI_HOST, CPX_F_APP, &txp.route);
@@ -62,7 +63,7 @@ void rx_task(void *parameters)
     if (wifiClientConnected)
     {
       // wait for incoming messages
-      cpxReceivePacketBlocking(CPX_F_APP, &rxp); // Blocca fino a ricezione
+      // cpxReceivePacketBlocking(CPX_F_APP, &rxp); // Blocca fino a ricezione
 
       if (rxp.route.source == CPX_T_WIFI_HOST)
       {
@@ -81,7 +82,6 @@ void rx_task(void *parameters)
     }
   }
 }
- */
 
 void comm_task(void *parameters)
 {
@@ -115,6 +115,7 @@ void start_example(void)
   struct pi_device device;
   pi_uart_conf_init(&conf);
   conf.baudrate_bps = 115200;
+  cpxRegisterAppMessageHandler(cpxPacketCallback);
 
   pi_open_from_conf(&device, &conf);
   if (pi_uart_open(&device))
@@ -165,4 +166,9 @@ int main(void)
   pi_freq_set(PI_FREQ_DOMAIN_FC, 250000000);
   __pi_pmu_voltage_set(PI_PMU_DOMAIN_FC, 1200);
   return pmsis_kickoff((void *)start_example);
+}
+
+static void cpxPacketCallback(const CPXPacket_t *cpxRx)
+{
+  DEBUG_PRINT("Got packet from ROUTER PC (%u)\n", cpxRx->data[0]);
 }
